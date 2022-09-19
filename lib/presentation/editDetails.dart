@@ -3,10 +3,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/model/data_model.dart';
 import 'package:flutter_application_1/functions/data_functions.dart';
-import 'package:flutter_application_1/home.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:flutter_application_1/presentation/home.dart';
+import 'package:flutter_application_1/provider/image_provider.dart';
 
-class EditDetails extends StatefulWidget {
+import 'package:provider/provider.dart';
+
+class EditDetails extends StatelessWidget {
   EditDetails({
     Key? key,
     required this.name,
@@ -22,25 +24,17 @@ class EditDetails extends StatefulWidget {
   final String image;
 
   final formkey = GlobalKey<FormState>();
-  @override
-  State<EditDetails> createState() => _EditDetailsState();
-}
 
-class _EditDetailsState extends State<EditDetails> {
   late TextEditingController nameController;
   late TextEditingController courseController;
   late TextEditingController addressController;
-  @override
-  void initState() {
-    nameController = TextEditingController(text: widget.name);
-    courseController = TextEditingController(text: widget.course);
-    addressController = TextEditingController(text: widget.address);
-    super.initState();
-  }
 
-  final formkey = GlobalKey<FormState>();
   @override
   Widget build(BuildContext context) {
+    nameController = TextEditingController(text: name);
+    courseController = TextEditingController(text: course);
+    addressController = TextEditingController(text: address);
+
     return Scaffold(
         appBar: AppBar(
           backgroundColor: const Color.fromARGB(255, 42, 116, 46),
@@ -56,21 +50,28 @@ class _EditDetailsState extends State<EditDetails> {
                 children: [
                   Stack(
                     children: [
-                      _image?.path == null
-                          ? CircleAvatar(
-                              radius: 70,
-                              backgroundImage: FileImage(File(widget.image)),
-                            )
-                          : CircleAvatar(
-                              radius: 70,
-                              backgroundImage: FileImage(File(_image!.path)),
-                            ),
+                      CircleAvatar(
+                        radius: 70,
+                        backgroundImage: FileImage(File(
+                            Provider.of<ImageChangeProvider>(context,
+                                            listen: true)
+                                        .img
+                                        ?.path ==
+                                    null
+                                ? image
+                                : Provider.of<ImageChangeProvider>(context,
+                                        listen: false)
+                                    .img!
+                                    .path)),
+                      ),
                       Positioned(
                         bottom: 18,
                         right: 20,
                         child: InkWell(
                           onTap: () {
-                            getImage();
+                            Provider.of<ImageChangeProvider>(context,
+                                    listen: false)
+                                .getImage();
                           },
                           child: const Icon(
                             Icons.camera_alt,
@@ -176,8 +177,8 @@ class _EditDetailsState extends State<EditDetails> {
                                         color: Color.fromARGB(
                                             255, 206, 236, 239))))),
                     onPressed: () {
-                      onAddStudentButtonClicked();
                       formkey.currentState!.validate();
+                      onAddStudentButtonClicked(context);
                     },
                     icon: const Icon(Icons.save),
                     label: const Text('Save'),
@@ -189,33 +190,22 @@ class _EditDetailsState extends State<EditDetails> {
         ));
   }
 
-  Future<void> onAddStudentButtonClicked() async {
+  Future<void> onAddStudentButtonClicked(context) async {
     final student = StudentModel(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
         name: nameController.text,
         course: courseController.text,
         address: addressController.text,
-        image: widget.image);
-    await EditStudentDetails(widget.index, student);
-    if (!mounted) {
-      return;
-    }
+        image: Provider.of<ImageChangeProvider>(context, listen: false)
+                .img
+                ?.path ??
+            image);
+    await DbFunctionsProvider().EditStudentDetails(index, student);
+
     Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
-          builder: (context) => const HomeScreen(),
+          builder: (context) => HomeScreen(),
         ),
         (route) => false);
-  }
-
-  File? _image;
-  Future getImage() async {
-    final image = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (image == null) {
-      return;
-    } else {
-      final imageTemporary = File(image.path);
-      setState(() {
-        _image = imageTemporary;
-      });
-    }
   }
 }

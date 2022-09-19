@@ -3,19 +3,17 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/model/data_model.dart';
 import 'package:flutter_application_1/functions/data_functions.dart';
+import 'package:flutter_application_1/provider/searchProvider.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 
-class AddDetails extends StatefulWidget {
+import '../provider/image_provider.dart';
+
+class AddDetails extends StatelessWidget {
   AddDetails({Key? key}) : super(key: key);
 
   final formkey = GlobalKey<FormState>();
-  @override
-  State<AddDetails> createState() => _AddDetailsState();
-}
 
-class _AddDetailsState extends State<AddDetails> {
-  final formkey = GlobalKey<FormState>();
   final TextEditingController nameController = TextEditingController();
   final TextEditingController courseController = TextEditingController();
   final TextEditingController addressController = TextEditingController();
@@ -34,35 +32,40 @@ class _AddDetailsState extends State<AddDetails> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Center(
-                    child: Stack(
-                      children: [
-                        _image?.path == null
-                            ? const CircleAvatar(
-                                radius: 70,
-                                backgroundImage:
-                                    AssetImage('assets/flutterlogo.jpeg'),
-                              )
-                            : CircleAvatar(
-                                radius: 70,
-                                backgroundImage: FileImage(File(_image!.path)),
+                  Center(child: Consumer<ImageChangeProvider>(
+                    builder: (context, value, child) {
+                      return Stack(
+                        children: [
+                          value.img == null
+                              ? const CircleAvatar(
+                                  radius: 70,
+                                  backgroundImage:
+                                      AssetImage('assets/flutterlogo.jpeg'),
+                                )
+                              : CircleAvatar(
+                                  radius: 70,
+                                  backgroundImage:
+                                      FileImage(File(value.img!.path)),
+                                ),
+                          Positioned(
+                            bottom: 18,
+                            right: 20,
+                            child: InkWell(
+                              onTap: () {
+                                Provider.of<ImageChangeProvider>(context,
+                                        listen: false)
+                                    .getImage();
+                              },
+                              child: const Icon(
+                                Icons.camera_alt,
+                                color: Colors.teal,
                               ),
-                        Positioned(
-                          bottom: 18,
-                          right: 20,
-                          child: InkWell(
-                            onTap: () {
-                              getImage();
-                            },
-                            child: const Icon(
-                              Icons.camera_alt,
-                              color: Colors.teal,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
+                        ],
+                      );
+                    },
+                  )),
                   const SizedBox(
                     height: 20,
                   ),
@@ -159,8 +162,11 @@ class _AddDetailsState extends State<AddDetails> {
                                         color: Color.fromARGB(
                                             255, 206, 236, 239))))),
                     onPressed: () {
-                      onAddStudentButtonClicked();
+                      onAddStudentButtonClicked(
+                          context.read<ImageChangeProvider>().img, context);
                       formkey.currentState!.validate();
+                      Provider.of<DbFunctionsProvider>(context, listen: false)
+                          .getAllStudents();
                     },
                     icon: const Icon(Icons.save),
                     label: const Text('Save'),
@@ -177,29 +183,25 @@ class _AddDetailsState extends State<AddDetails> {
         fontSize: 18,
       );
 
-  Future<void> onAddStudentButtonClicked() async {
+  Future<void> onAddStudentButtonClicked(File? img, context) async {
     final name = nameController.text.trim();
     final course = courseController.text.trim();
     final address = addressController.text.trim();
-    if (name.isEmpty || course.isEmpty || address.isEmpty) {
+    final image = img!.path;
+
+    if (name.isEmpty || course.isEmpty || address.isEmpty || image.isEmpty) {
       return;
     }
     showSaved();
     final student = StudentModel(
-        name: name, course: course, address: address, image: _image!.path);
-    addStudent(student);
-  }
-
-  File? _image;
-  Future getImage() async {
-    final image = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (image == null) {
-      return;
-    } else {
-      final imageTemporary = File(image.path);
-      setState(() {
-        _image = imageTemporary;
-      });
-    }
+        name: name,
+        course: course,
+        address: address,
+        image: img.path,
+        id: DateTime.now().millisecondsSinceEpoch.toString());
+    DbFunctionsProvider().addStudent(student);
+    Provider.of<SearchProvider>(context, listen: false).getAll();
+    Provider.of<ImageChangeProvider>(context, listen: false).img = null;
+    Navigator.of(context).pop();
   }
 }

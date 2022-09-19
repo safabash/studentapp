@@ -1,27 +1,24 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/editDetails.dart';
+import 'package:flutter_application_1/presentation/editDetails.dart';
 
-class Show_details extends StatefulWidget {
-  const Show_details({
-    Key? key,
-    required this.name,
-    required this.course,
-    required this.address,
-    required this.index,
-    required this.image,
-  }) : super(key: key);
+class Show_details extends StatelessWidget {
+  const Show_details(
+      {Key? key,
+      required this.name,
+      required this.course,
+      required this.address,
+      required this.index,
+      required this.image,
+      required this.id})
+      : super(key: key);
   final String name;
   final String address;
   final String course;
   final int index;
   final String image;
-  @override
-  State<Show_details> createState() => _Show_detailsState();
-}
-
-class _Show_detailsState extends State<Show_details> {
+  final String id;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -35,11 +32,11 @@ class _Show_detailsState extends State<Show_details> {
           Navigator.of(context).push(
             MaterialPageRoute(
                 builder: (context) => EditDetails(
-                      name: widget.name,
-                      course: widget.course,
-                      address: widget.address,
-                      index: widget.index,
-                      image: widget.image,
+                      name: name,
+                      course: course,
+                      address: address,
+                      index: index,
+                      image: image,
                     )),
           );
         },
@@ -50,16 +47,16 @@ class _Show_detailsState extends State<Show_details> {
       body: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         CircleAvatar(
           radius: 90,
-          backgroundImage: FileImage(File(widget.image)),
+          backgroundImage: FileImage(File(image)),
         ),
         const SizedBox(
           height: 20,
         ),
-        Text("Name:${widget.name}"),
+        Text("Name:$name"),
         const SizedBox(
           height: 10,
         ),
-        Text('Course:${widget.course}'),
+        Text('Course:$course'),
         const SizedBox(
           height: 10,
         ),
@@ -67,7 +64,7 @@ class _Show_detailsState extends State<Show_details> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Text('Address:'),
-            Text(widget.address),
+            Text(address),
           ],
         )
       ]),

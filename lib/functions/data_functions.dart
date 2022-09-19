@@ -4,30 +4,32 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/model/data_model.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-ValueNotifier<List<StudentModel>> studentListNotifier = ValueNotifier([]);
-void addStudent(StudentModel value) async {
-  final studentDB = await Hive.openBox<StudentModel>('student_db');
-  final id = await studentDB.add(value);
-  value.id = id;
-  studentListNotifier.value.add(value);
-  // ignore: invalid_use_of_visible_for_testing_member
-  studentListNotifier.notifyListeners();
-}
+class DbFunctionsProvider with ChangeNotifier {
+  static List<StudentModel> studentList = [];
+  Future<void> addStudent(StudentModel value) async {
+    final studentDB = await Hive.openBox<StudentModel>('student_db');
+    studentDB.put(value.id, value);
+    studentList.add(value);
 
-Future<void> getAllStudents() async {
-  final studentDB = await Hive.openBox<StudentModel>('student_db');
-  studentListNotifier.value.clear();
-  studentListNotifier.value.addAll(studentDB.values);
-  studentListNotifier.notifyListeners();
-}
+    getAllStudents();
+  }
 
-Future<void> deleteStudents(int id) async {
-  final studentDB = await Hive.openBox<StudentModel>('student_db');
-  await studentDB.deleteAt(id);
-  getAllStudents();
-}
+  Future<List<StudentModel>> getAllStudents() async {
+    final studentDB = await Hive.openBox<StudentModel>('student_db');
+    studentList.clear();
+    studentList.addAll(studentDB.values);
+    return studentList;
+  }
 
-Future<void> EditStudentDetails(int id, StudentModel value) async {
-  final studentDB = await Hive.openBox<StudentModel>('student_db');
-  await studentDB.putAt(id, value);
+  Future<void> deleteStudents(String id) async {
+    final studentDB = await Hive.openBox<StudentModel>('student_db');
+    await studentDB.delete(id);
+    getAllStudents();
+  }
+
+  Future<void> EditStudentDetails(int id, StudentModel value) async {
+    final studentDB = await Hive.openBox<StudentModel>('student_db');
+    await studentDB.putAt(id, value);
+    getAllStudents();
+  }
 }
